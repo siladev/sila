@@ -8,7 +8,7 @@
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
   // Log interno seguro: solo mensaje de error, nunca datos sensibles
-  console.error(`[Error] ${err.message}`);
+  console.error(`[Error] ${err.message}`, err.stack);
 
   const statusCode = err.statusCode || 500;
 
