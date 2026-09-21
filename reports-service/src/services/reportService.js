@@ -147,6 +147,22 @@ async function generateMonthlyReport(userId, token, requestedMonth) {
     ? Number((((roundedTotalBudget - roundedTotalSpent) / roundedTotalBudget) * 100).toFixed(2))
     : 0;
 
+  // Identificar explícitamente categorías que superaron el presupuesto
+  const overspentCategories = categories
+    .filter((c) => c.status === 'exceeded')
+    .map((c) => ({
+      category: c.category,
+      spent: c.spent,
+      budget_limit: c.budget_limit,
+      overspent_amount: Number((c.spent - c.budget_limit).toFixed(2)),
+      percentage_used: c.percentage_used,
+    }));
+
+  const hasOverspent = overspentCategories.length > 0;
+  const totalOverspent = Number(
+    overspentCategories.reduce((sum, c) => sum + c.overspent_amount, 0).toFixed(2)
+  );
+
   const summary = {
     month,
     date_range: { from, to },
@@ -157,6 +173,10 @@ async function generateMonthlyReport(userId, token, requestedMonth) {
     transactions_count: transactions.length,
     categories_count: categories.length,
     top_spending_category: topCategory,
+    has_overspent: hasOverspent,
+    overspent_count: overspentCategories.length,
+    total_overspent: totalOverspent,
+    overspent_categories: overspentCategories,
   };
 
   // 5. Crear directorio de almacenamiento si no existe
@@ -174,6 +194,13 @@ async function generateMonthlyReport(userId, token, requestedMonth) {
     user_id: userId,
     month,
     generated_at: new Date().toISOString(),
+    has_overspent: hasOverspent,
+    overspent_alerts: hasOverspent
+      ? overspentCategories.map(
+          (c) =>
+            `ALERTA: La categoría '${c.category}' superó su presupuesto por $${c.overspent_amount} (consumo: ${c.percentage_used}%)`
+        )
+      : [],
     summary,
     categories,
     transactions_count: transactions.length,
