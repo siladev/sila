@@ -1,6 +1,7 @@
 export type TransactionType = 'expense' | 'income';
 
 export type TransactionCategory =
+  | 'Comida'
   | 'Alimentación'
   | 'Transporte'
   | 'Vivienda'
@@ -8,7 +9,8 @@ export type TransactionCategory =
   | 'Ocio'
   | 'Salud'
   | 'Educación'
-  | 'Otros';
+  | 'Otros'
+  | string;
 
 export interface Transaction {
   id: string;

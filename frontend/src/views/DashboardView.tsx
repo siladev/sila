@@ -1,16 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Wallet, TrendingUp, TrendingDown } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useTransactions } from '../hooks/useTransactions';
 import { MainLayout } from '../components/layout/MainLayout';
 import { StatCard } from '../components/common/StatCard';
 import { TransactionList } from '../components/transactions/TransactionList';
+import { NewTransactionModal } from '../components/transactions/NewTransactionModal';
+import { CreateTransactionDto } from '../types/transaction';
 
 export const DashboardView: React.FC = () => {
   const { user } = useAuth();
   const { transactions, isLoading, addTransaction } = useTransactions();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Calculated metrics (currently 0 for clean scaffold)
+  // Calculated metrics
   const totalIncome = transactions
     .filter((tx) => tx.type === 'income')
     .reduce((acc, tx) => acc + tx.amount, 0);
@@ -21,21 +24,16 @@ export const DashboardView: React.FC = () => {
 
   const balance = totalIncome - totalExpense;
 
-  const handleNewTransaction = async () => {
-    // Quick test entry creation for user demonstration
-    const description = prompt('Descripción del gasto/ingreso (o presiona Cancelar):', 'Café de especialidad');
-    if (!description) return;
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
 
-    const amountStr = prompt('Monto:', '4.50');
-    if (!amountStr || isNaN(parseFloat(amountStr))) return;
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
 
-    await addTransaction({
-      description,
-      amount: parseFloat(amountStr),
-      type: 'expense',
-      category: 'Alimentación',
-      date: new Date().toISOString().split('T')[0],
-    });
+  const handleSubmitTransaction = async (dto: CreateTransactionDto) => {
+    await addTransaction(dto);
   };
 
   return (
@@ -54,7 +52,7 @@ export const DashboardView: React.FC = () => {
       <div className="stats-grid">
         <StatCard
           label="Balance Total"
-          value={`$${balance.toFixed(2)}`}
+          value={`$${balance.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtext="Calculado de ingresos y egresos"
           icon={<Wallet size={20} />}
           iconBgColor="var(--color-primary-50)"
@@ -62,16 +60,16 @@ export const DashboardView: React.FC = () => {
         />
         <StatCard
           label="Ingresos del Período"
-          value={`$${totalIncome.toFixed(2)}`}
-          subtext="0 transacciones registradas"
+          value={`$${totalIncome.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          subtext={`${transactions.filter((t) => t.type === 'income').length} transacciones registradas`}
           icon={<TrendingUp size={20} />}
           iconBgColor="var(--color-success-50)"
           iconColor="var(--color-success-600)"
         />
         <StatCard
           label="Gastos del Período"
-          value={`$${totalExpense.toFixed(2)}`}
-          subtext="0 transacciones registradas"
+          value={`$${totalExpense.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          subtext={`${transactions.filter((t) => t.type === 'expense').length} transacciones registradas`}
           icon={<TrendingDown size={20} />}
           iconBgColor="var(--color-danger-50)"
           iconColor="var(--color-danger-600)"
@@ -81,7 +79,13 @@ export const DashboardView: React.FC = () => {
       <TransactionList
         transactions={transactions}
         isLoading={isLoading}
-        onNewTransaction={handleNewTransaction}
+        onNewTransaction={handleOpenModal}
+      />
+
+      <NewTransactionModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmitTransaction}
       />
     </MainLayout>
   );

@@ -4,17 +4,34 @@ import { apiClient } from './apiClient';
 class TransactionService {
   async getTransactions(): Promise<Transaction[]> {
     try {
-      const transactions = await apiClient.get<Transaction[]>('/transactions');
-      return transactions;
+      const res = await apiClient.get<any>('/transactions');
+      const list = Array.isArray(res) ? res : (res.transactions || []);
+      return list.map((tx: any) => ({
+        id: String(tx.id),
+        amount: Number(tx.amount),
+        type: tx.type || 'expense',
+        category: tx.category,
+        description: tx.description || '',
+        date: tx.date,
+      }));
     } catch {
-      // In development / scaffold mode without backend, return empty list of transactions
+      // Fallback en desarrollo sin backend
       return [];
     }
   }
 
   async createTransaction(dto: CreateTransactionDto): Promise<Transaction> {
     try {
-      return await apiClient.post<Transaction>('/transactions', dto);
+      const res = await apiClient.post<any>('/transactions', dto);
+      const tx = res.transaction || res;
+      return {
+        id: String(tx.id || 'tx_' + Date.now()),
+        amount: Number(tx.amount || dto.amount),
+        type: dto.type || 'expense',
+        category: tx.category || dto.category,
+        description: tx.description || dto.description || '',
+        date: tx.date || dto.date,
+      };
     } catch {
       // Fallback mock transaction creation for development
       return {
